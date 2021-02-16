@@ -38,6 +38,7 @@ class Err<E> implements ResultInterface<E, unknown> {
     return toMaybe(this);
   }
 }
+
 class Ok<A> implements ResultInterface<unknown, A> {
   kind: "Ok";
   value: A;
@@ -67,6 +68,14 @@ class Ok<A> implements ResultInterface<unknown, A> {
     return toMaybe(this);
   }
 }
+
+const of = (value: unknown) => {
+  if (value != null) {
+    return ok(value);
+  } else {
+    return err("null value");
+  }
+};
 
 const withDefault = <E, A>(defaultValue: A) => (result: Result<E, A>): A => {
   switch (result.kind) {
@@ -204,6 +213,7 @@ export const Result = {
   map5: map5,
   map: map,
   mapError: mapError,
+  of: of,
   toMaybe: toMaybe,
   withDefault: withDefault,
 };
