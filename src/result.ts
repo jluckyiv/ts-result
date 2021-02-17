@@ -6,7 +6,17 @@ interface ResultInterface<E, A> {
   map: <B>(f: (arg: A) => B) => Result<E, B>;
   mapError: <F>(f: (arg: E) => F) => Result<F, A>;
   andThen: <B>(f: (arg: A) => Result<E, B>) => Result<E, B>;
+  andMap: <B>(f: Result<E, FunctionValue<A, B> | B>) => Result<E, A>;
   toMaybe: (arg: Result<E, A>) => Maybe<A>;
+}
+
+interface FunctionValue<A, B> {
+  value: (_: A) => B;
+}
+
+interface ErrMessage {
+  error: string;
+  message: string;
 }
 
 class Err<E> implements ResultInterface<E, unknown> {
@@ -22,7 +32,7 @@ class Err<E> implements ResultInterface<E, unknown> {
     return withDefault(defaultValue)(this);
   }
 
-  map(_: (arg: any) => any): Result<E, any> {
+  map(_: (arg: any) => unknown): Result<E, any> {
     return this;
   }
 
@@ -31,6 +41,10 @@ class Err<E> implements ResultInterface<E, unknown> {
   }
 
   andThen(_: (_: any) => Result<E, unknown>): Result<E, any> {
+    return this;
+  }
+
+  andMap(_: Result<E, unknown>) {
     return this;
   }
 
@@ -62,6 +76,10 @@ class Ok<A> implements ResultInterface<unknown, A> {
 
   andThen<B>(f: (arg: A) => Result<unknown, B>): Result<unknown, B> {
     return andThen(f)(this);
+  }
+
+  andMap<B>(f: Result<unknown, FunctionValue<A, B> | B>): Result<unknown, A> {
+    return andMap(this)(f);
   }
 
   toMaybe(): Maybe<A> {
@@ -201,6 +219,24 @@ const map5 = <E, A, B, C, D, F, G>(
         resultF.value
       )
     );
+  }
+};
+
+const andMap = <E, A, B>(maybeFunction: Result<E, FunctionValue<A, B> | B>) => (
+  result: Result<E, A>
+): Result<E | ErrMessage, B> => {
+  if (result.kind === "Err") {
+    return result;
+  } else if (maybeFunction.kind === "Err") {
+    return maybeFunction;
+  } else if (typeof maybeFunction.value !== "function") {
+    return err({
+      error: "not a function",
+      message:
+        "Result.andMap can be called only on a Result<E, (f: (arg: A) => B)>.",
+    });
+  } else {
+    return ok(maybeFunction.value(result.value));
   }
 };
 

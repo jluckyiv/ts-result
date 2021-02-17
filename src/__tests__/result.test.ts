@@ -298,4 +298,42 @@ describe("Result", () => {
       expect(actual).toStrictEqual(ok(5));
     });
   });
+  describe("Result.andMap", () => {
+    const add3 = (n1: number) => (n2: number) => (n3: number) => n1 + n2 + n3;
+    test("with err first", () => {
+      const actual = ok(add3)
+        .andMap(err("null value"))
+        .andMap(ok(1))
+        .andMap(ok(1));
+      expect(actual).toStrictEqual(err("null value"));
+    });
+    test("with err second", () => {
+      const actual = ok(add3)
+        .andMap(ok(1))
+        .andMap(err("null value"))
+        .andMap(ok(1));
+      expect(actual).toStrictEqual(err("null value"));
+    });
+    test("with err third", () => {
+      const actual = ok(add3)
+        .andMap(ok(1))
+        .andMap(ok(1))
+        .andMap(err("null value"));
+      expect(actual).toStrictEqual(err("null value"));
+    });
+    test("without function as first argument", () => {
+      const actual = ok(1).andMap(ok(1));
+      expect(actual).toStrictEqual(
+        err({
+          error: "not a function",
+          message:
+            "Result.andMap can be called only on a Result<E, (f: (arg: A) => B)>.",
+        })
+      );
+    });
+    test("with valid input", () => {
+      const actual = ok(add3).andMap(ok(1)).andMap(ok(1)).andMap(ok(1));
+      expect(actual).toStrictEqual(ok(3));
+    });
+  });
 });
